@@ -1,26 +1,3 @@
-st.write("Enter the property details below to estimate its sale price.")
-
-st.divider()
-
-# Property inputs
-st.subheader("🏠 Enter Property Details")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    quality = st.slider(
-        "Overall Quality (1–10)",
-        min_value=1,
-        max_value=10,
-        value=7,
-    )
-    living_area = st.number_input(
-        "Above-Ground Living Area (sq ft)",
-        min_value=100,
-        max_value=10000,
-        value=2000,
-        step=50,
-    )
     garage_cars = st.number_input(
         "Garage Capacity (cars)",
         min_value=0,
@@ -66,12 +43,12 @@ with col2:
         step=100,
     )
 
-# Predict sale price
 if st.button(
     "💰 Predict House Price",
     type="primary",
     use_container_width=True,
 ):
+    # Keep feature names consistent with the saved model.
     features = pd.DataFrame([{
         "OverallQual": quality,
         "GrLivArea": living_area,
@@ -83,6 +60,18 @@ if st.button(
         "LotArea": lot_area,
     }])
 
+    # If the model records feature names, align the inputs to them.
+    if hasattr(model, "feature_names_in_"):
+        expected_features = list(model.feature_names_in_)
+        missing_features = [name for name in expected_features if name not in features.columns]
+        if missing_features:
+            st.error(
+                "The saved model expects feature(s) not provided by this form: "
+                + ", ".join(missing_features)
+            )
+            st.stop()
+        features = features[expected_features]
+
     try:
         prediction = float(model.predict(features)[0])
         st.success("Prediction completed!")
@@ -93,12 +82,22 @@ if st.button(
         st.caption(
             "This is a machine learning estimate, not a guaranteed market valuation."
         )
+
+        prediction_record = features.copy()
+        prediction_record["PredictedSalePrice"] = prediction
+        st.download_button(
+            "Download prediction as CSV",
+            data=prediction_record.to_csv(index=False).encode("utf-8"),
+            file_name="house_price_prediction.csv",
+            mime="text/csv",
+        )
     except Exception as exc:
         st.error(
-            "Prediction failed. Confirm that the input feature names and order "
-            "match those used to train the saved model."
+            "Prediction failed. Confirm that the saved model was trained with "
+            "the same eight features and compatible preprocessing."
         )
-        st.code(str(exc))
+        with st.expander("Technical details"):
+            st.code(str(exc))
 
 st.divider()
 
@@ -108,8 +107,10 @@ with st.expander("About this case study"):
 
     **Dataset:** 300 housing records.
 
-    **Model used:** Saved trained Linear Regression model.
+    **Model used:** Saved trained regression model.
 
     Enter the property characteristics and click **Predict House Price** to view
     the estimated sale price.
     """)
+
+

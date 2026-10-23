@@ -1,3 +1,67 @@
+import streamlit as st
+import pandas as pd
+import pickle
+from pathlib import Path
+
+st.set_page_config(
+    page_title="House Price Prediction",
+    page_icon="🏡",
+    layout="wide",
+)
+
+# Paths are resolved relative to this app.py file.
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_PATH = BASE_DIR / "case_study_house_model.pkl"
+
+# Load the saved, trained model
+@st.cache_resource
+def load_model(model_path):
+    with open(model_path, "rb") as file:
+        return pickle.load(file)
+
+if not MODEL_PATH.exists():
+    st.error(
+        "Model file not found: case_study_house_model.pkl. "
+        "Add it to the same folder as app.py in your GitHub repository."
+    )
+    st.stop()
+
+try:
+    model = load_model(str(MODEL_PATH))
+except Exception as exc:
+    st.error(
+        "Could not load the saved model. Check that the model file is valid "
+        "and that the scikit-learn version matches the version used to train it."
+    )
+    with st.expander("Technical details"):
+        st.code(str(exc))
+    st.stop()
+
+# Header
+st.title("🏡 House Price Prediction")
+st.caption("Machine Learning Case Study | 300 Housing Records")
+st.write("Enter the property details below to estimate its sale price.")
+
+st.divider()
+
+# Property inputs
+st.subheader("🏠 Enter Property Details")
+col1, col2 = st.columns(2)
+
+with col1:
+    quality = st.slider(
+        "Overall Quality (1–10)",
+        min_value=1,
+        max_value=10,
+        value=7,
+    )
+    living_area = st.number_input(
+        "Above-Ground Living Area (sq ft)",
+        min_value=100,
+        max_value=10000,
+        value=2000,
+        step=50,
+    )
     garage_cars = st.number_input(
         "Garage Capacity (cars)",
         min_value=0,
@@ -112,5 +176,3 @@ with st.expander("About this case study"):
     Enter the property characteristics and click **Predict House Price** to view
     the estimated sale price.
     """)
-
-

@@ -1,6 +1,13 @@
-st.write("Enter the property details below to estimate its sale price.")
+import streamlit as st
+import pandas as pd
+import pickle
+import json
 
-st.divider()
+st.set_page_config(
+    page_title="House Price Prediction | Case Study",
+    page_icon="🏡",
+    layout="wide"
+)
 
 # Property inputs
 st.subheader("🏠 Enter Property Details")
